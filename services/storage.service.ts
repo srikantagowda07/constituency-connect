@@ -1,23 +1,12 @@
-import {
-  ref,
-  uploadBytesResumable,
-  getDownloadURL,
-  deleteObject,
-  type UploadTaskSnapshot,
-} from "firebase/storage";
-import storage from "@/firebase/storage";
+import { uploadFile, deleteFile, type UploadProgress } from "@/firebase/storage";
 import { STORAGE_PATHS } from "@/constants/app";
 import { logger } from "@/lib/logger";
 
-export interface UploadProgress {
-  bytesTransferred: number;
-  totalBytes: number;
-  percent: number;
-}
+export type { UploadProgress };
 
 /**
- * Upload a complaint photo and return its download URL.
- * Calls onProgress with upload progress during the upload.
+ * Upload a complaint photo and return its public download URL.
+ * Delegates to the generic uploadFile helper in firebase/storage.ts.
  */
 export async function uploadComplaintPhoto(
   complaintId: string,
@@ -25,33 +14,17 @@ export async function uploadComplaintPhoto(
   onProgress?: (progress: UploadProgress) => void,
 ): Promise<string> {
   const fileName = `${Date.now()}-${file.name}`;
-  const storageRef = ref(storage, `${STORAGE_PATHS.COMPLAINT_PHOTOS(complaintId)}/${fileName}`);
-  const task = uploadBytesResumable(storageRef, file);
+  const storagePath = `${STORAGE_PATHS.COMPLAINT_PHOTOS(complaintId)}/${fileName}`;
 
-  return new Promise<string>((resolve, reject) => {
-    task.on(
-      "state_changed",
-      (snapshot: UploadTaskSnapshot) => {
-        onProgress?.({
-          bytesTransferred: snapshot.bytesTransferred,
-          totalBytes: snapshot.totalBytes,
-          percent: (snapshot.bytesTransferred / snapshot.totalBytes) * 100,
-        });
-      },
-      reject,
-      async () => {
-        const url = await getDownloadURL(task.snapshot.ref);
-        logger.info("Photo uploaded:", url);
-        resolve(url);
-      },
-    );
-  });
+  const result = await uploadFile(storagePath, file, onProgress);
+  logger.info("Photo uploaded:", result.downloadURL);
+  return result.downloadURL;
 }
 
 /**
- * Delete a file by its full storage path.
+ * Delete a file by its full Firebase Storage path.
  */
-export async function deleteStorageFile(path: string): Promise<void> {
-  await deleteObject(ref(storage, path));
-  logger.info("Storage file deleted:", path);
+export async function deleteStorageFile(storagePath: string): Promise<void> {
+  await deleteFile(storagePath);
+  logger.info("Storage file deleted:", storagePath);
 }

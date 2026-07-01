@@ -1,64 +1,66 @@
+import type { User, Unsubscribe } from "firebase/auth";
 import {
-  signInWithPhoneNumber,
-  signOut,
-  onAuthStateChanged,
-  RecaptchaVerifier,
-  type ConfirmationResult,
-  type User,
-  type Unsubscribe,
-} from "firebase/auth";
-import auth from "@/firebase/auth";
+  sendPhoneOtp,
+  confirmPhoneOtp,
+  signInWithGoogle,
+  signOutCurrentUser,
+  subscribeAuthState,
+  getCurrentUser,
+  type PhoneOtpSession,
+} from "@/firebase/auth";
 import { logger } from "@/lib/logger";
 
+export type { PhoneOtpSession };
+
 /**
- * Initiate phone number sign-in and return a ConfirmationResult.
- * The caller must render a #recaptcha-container element in the DOM.
+ * Initiate phone OTP sign-in.
+ * The caller must ensure a DOM element with `recaptchaContainerId` is mounted.
  */
 export async function sendOtp(
   phoneNumber: string,
   recaptchaContainerId: string,
-): Promise<ConfirmationResult> {
-  const verifier = new RecaptchaVerifier(auth, recaptchaContainerId, {
-    size: "invisible",
-  });
-  const result = await signInWithPhoneNumber(auth, phoneNumber, verifier);
+): Promise<PhoneOtpSession> {
+  const session = await sendPhoneOtp(phoneNumber, recaptchaContainerId);
   logger.info("OTP sent to", phoneNumber);
-  return result;
+  return session;
 }
 
 /**
- * Confirm the OTP entered by the user.
+ * Confirm the OTP the user entered.
  */
-export async function confirmOtp(
-  confirmationResult: ConfirmationResult,
-  otp: string,
-): Promise<User> {
-  const credential = await confirmationResult.confirm(otp);
-  logger.info("OTP confirmed for user", credential.user.uid);
-  return credential.user;
+export async function confirmOtp(session: PhoneOtpSession, otp: string): Promise<User> {
+  const user = await confirmPhoneOtp(session, otp);
+  logger.info("OTP confirmed for user", user.uid);
+  return user;
+}
+
+/**
+ * Sign in with Google (MLA / admin users).
+ */
+export async function signInAdmin(): Promise<User> {
+  const user = await signInWithGoogle();
+  logger.info("Google sign-in:", user.uid);
+  return user;
 }
 
 /**
  * Sign the current user out.
  */
 export async function signOutUser(): Promise<void> {
-  await signOut(auth);
+  await signOutCurrentUser();
   logger.info("User signed out");
 }
 
 /**
- * Subscribe to auth state changes.
- * Returns the unsubscribe function.
+ * Subscribe to auth state changes. Returns the unsubscribe function.
  */
 export function subscribeToAuthState(
   callback: (user: User | null) => void,
 ): Unsubscribe {
-  return onAuthStateChanged(auth, callback);
+  return subscribeAuthState(callback);
 }
 
 /**
  * Return the currently authenticated user, or null.
  */
-export function getCurrentUser(): User | null {
-  return auth.currentUser;
-}
+export { getCurrentUser };
