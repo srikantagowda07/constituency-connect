@@ -1,34 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { User } from "firebase/auth";
-import { subscribeToAuthState } from "@/services/auth.service";
-
-interface UseAuthReturn {
-  user: User | null;
-  loading: boolean;
-  isAuthenticated: boolean;
-}
-
 /**
- * Subscribe to Firebase Auth state.
- * Returns the current user and a loading flag.
+ * hooks/useAuth.ts
+ *
+ * Primary authentication hook for components.
+ * Wraps useAuthContext and exposes a clean, flat API so components
+ * never import directly from contexts/.
+ *
+ * Usage:
+ *   const { session, isAuthenticated, signInWithGoogle, signOut } = useAuth();
+ *   const { session, hasPermission } = useAuth();
  */
-export function useAuth(): UseAuthReturn {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const unsubscribe = subscribeToAuthState((firebaseUser) => {
-      setUser(firebaseUser);
-      setLoading(false);
-    });
-    return unsubscribe;
-  }, []);
+import { useAuthContext } from "@/contexts/AuthContext";
+import { hasPermission, canAccessDashboard } from "@/lib/auth/permissions";
+import type { Permission } from "@/types/auth";
+
+export function useAuth() {
+  const ctx = useAuthContext();
 
   return {
-    user,
-    loading,
-    isAuthenticated: user !== null,
+    // Session data
+    session:         ctx.session,
+    isAuthenticated: ctx.isAuthenticated,
+    isLoading:       ctx.isLoading,
+    authError:       ctx.authError,
+
+    // Role helpers
+    role:      ctx.session?.role ?? null,
+    canAccess: canAccessDashboard(ctx.session?.role ?? null),
+
+    /** Check a single permission against the current role */
+    hasPermission: (permission: Permission): boolean =>
+      ctx.session ? hasPermission(ctx.session.role, permission) : false,
+
+    // Auth actions
+    signInWithGoogle: ctx.signInWithGoogle,
+    signInWithEmail:  ctx.signInWithEmail,
+    signOut:          ctx.signOut,
   };
 }

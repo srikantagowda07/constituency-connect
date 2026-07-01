@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { AuthProvider } from "./AuthProvider";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 /**
  * Compose all app-level context providers here.
