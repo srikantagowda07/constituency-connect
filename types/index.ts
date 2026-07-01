@@ -1,4 +1,6 @@
+// Legacy domain types (kept for backward compatibility during migration)
 export * from "./user";
-export * from "./complaint";
-export * from "./notification";
 export * from "./api";
+
+// Firestore database schema types
+export * from "./db";

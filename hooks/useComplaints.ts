@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { Complaint, ComplaintStatus } from "@/types/complaint";
+import type { Complaint, ComplaintStatus } from "@/types/db";
 import { listComplaints } from "@/services/complaint.service";
 import { logger } from "@/lib/logger";
 
 interface UseComplaintsOptions {
-  constituency?: string;
+  constituencyId?: string;
   status?: ComplaintStatus;
   assignedTo?: string;
   pageSize?: number;
@@ -39,7 +39,7 @@ export function useComplaints(options?: UseComplaintsOptions): UseComplaintsRetu
       })
       .finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [options?.constituency, options?.status, options?.assignedTo, options?.pageSize]);
+  }, [options?.constituencyId, options?.status, options?.assignedTo, options?.pageSize]);
 
   useEffect(() => {
     fetch();
