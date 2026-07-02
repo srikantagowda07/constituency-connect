@@ -63,12 +63,11 @@ export function useComplaintList(options: UseComplaintListOptions): UseComplaint
   const lastDocRef = useRef<QueryDocumentSnapshot<DocumentData> | null>(null);
 
   // Build filters object — stable reference via JSON key comparison
-  const filters: ComplaintFilters = {
-    constituencyId: options.constituencyId,
-    status:         options.status,
-    categoryId:     options.categoryId,
-    assignedTo:     options.assignedTo,
-  };
+  const filters: ComplaintFilters = {};
+  if (options.constituencyId !== undefined) filters.constituencyId = options.constituencyId;
+  if (options.status !== undefined) filters.status = options.status;
+  if (options.categoryId !== undefined) filters.categoryId = options.categoryId;
+  if (options.assignedTo !== undefined) filters.assignedTo = options.assignedTo;
 
   // Reset to page 1 whenever filters change
   useEffect(() => {
